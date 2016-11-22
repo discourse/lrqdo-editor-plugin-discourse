@@ -1,0 +1,4 @@
+plugins:
+  lrqdo_editor_enabled:
+    default: false
+    client: true
