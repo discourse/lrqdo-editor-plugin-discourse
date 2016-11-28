@@ -6,6 +6,8 @@
 
 enabled_site_setting :lrqdo_editor_enabled
 
+register_asset 'stylesheets/editor.css'
+
 after_initialize do
 
   require_dependency 'uploads_controller'

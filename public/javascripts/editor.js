@@ -1,21 +1,24 @@
 ﻿(function() {
   $(function() {
 
-    var TCMention = require("medium-editor-autocomplete").TCMention;
-
-    var cleanedMarkdown, editorBody, editorTitle, markDownEl;
+    var cleanedMarkdown, editorBody, editorTitle;
     var $defaultEditor = $('#reply-control');
     var $markdownSwitch = $('#editor input[name=markdown]');
     var $submitButton = $('#editor .btn-primary');
-
-    $markdownSwitch.bootstrapSwitch({
-      inverse: true,
-      offText: '&nbsp;',
-      onText: '&nbsp;'
-    });
+    var TCMention = require("medium-editor-autocomplete").TCMention;
+    var appEvents = Discourse.__container__.lookup('app-events:main');
 
     var resetEditor = function() {
       cleanedMarkdown = undefined;
+
+      $markdownSwitch.bootstrapSwitch({
+        inverse: true,
+        offText: '&nbsp;',
+        onText: '&nbsp;'
+      }).on('switchChange.bootstrapSwitch', function(event, state) {
+        if (state)
+          hideEditor(true);
+      }).bootstrapSwitch('state', false);
 
       if (editorTitle) {
         editorTitle.destroy();
@@ -25,6 +28,8 @@
         editorBody.resetContent();
         editorBody.destroy();
       }
+
+      $('#editor select').off('change');
 
       editorTitle = new MediumEditor('h1.editable', {
         toolbar: false,
@@ -54,7 +59,6 @@
         }
       });
 
-      markDownEl = $(".markdown-container");
       editorBody = new MediumEditor('textarea.editable', {
         extensions: {
           markdown: new MeMarkdown(function(markdown) {
@@ -62,12 +66,11 @@
             .split('<div class="medium-insert-buttons"')[0]
             .replace(/<figure contenteditable="false">/g, '')
             .replace(/<\/figure>/g, '');
-            markDownEl.text(cleanedMarkdown);
             validateForm();
           }),
           mention: new TCMention({
             renderPanelContent: function (panelEl, currentMentionText, selectMentionCallback) {
-              $.ajax({url: 'http://localhost:4000/users/search/users.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
+              $.ajax({url: '/users/search/users.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
               .done(function(response) {
                 if (response.users.slice(0, 5).length > 0) {
                   $(panelEl).html('<div class="dropdown-menu"></div>');
@@ -87,7 +90,7 @@
           }),
           emoji: new TCMention({
             renderPanelContent: function (panelEl, currentMentionText, selectMentionCallback) {
-              $.ajax({url: 'http://localhost:4000/emojis/search.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
+              $.ajax({url: '/emojis/search.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
               .done(function(response) {
                 if (response.emojis.length > 0) {
                   $(panelEl).html('<div class="dropdown-menu"></div>');
@@ -165,15 +168,13 @@
         var body = $(editable).text();
         // -5000 just to be sure with the editors conversion
         var maxPostLength = Discourse.SiteSettings.max_post_length - 5000;
-        if (body.length > maxPostLength) {
+        if (body.length > maxPostLength)
           editorBody.setContent(body.substring(0, maxPostLength));
-        }
       });
     }
 
     var showEditor = function() {
       if(!$('#editor').hasClass('visible')) {
-        $markdownSwitch.bootstrapSwitch('state', false);
         setTimeout(function() {
           if($('#editor').hasClass('visible')) {
             $('#main-outlet').hide();
@@ -193,12 +194,14 @@
     };
 
     var hideEditor = function(keepDefaultEditor) {
+      $markdownSwitch.off('switchChange.bootstrapSwitch');
+
       if (keepDefaultEditor == null)
         keepDefaultEditor = false;
 
       if (cleanedMarkdown) {
         $('.d-editor-input').val("");
-        DiscourseURL.appEvents.trigger('composer:insert-text', cleanedMarkdown);
+        appEvents.trigger('composer:insert-text', cleanedMarkdown);
       }
 
       $('#reply-title').trigger('focus');
@@ -211,9 +214,7 @@
       }
     };
 
-    DiscourseURL.appEvents.on('composer:opened', this, function(){
-      console.log('opened');
-
+    appEvents.on('composer:opened', this, function(){
       showEditor();
 
       var defaultEditorTitle = $('#reply-title').val();
@@ -245,23 +246,9 @@
       }, 5000);
     });
 
-    DiscourseURL.appEvents.on('composer:will-open', this, function(){
+    appEvents.on('composer:will-open', this, function(){
       showEditor();
-      console.log('will-open');
     });
-
-    DiscourseURL.appEvents.on('composer:insert-text', this, function(){
-      // showEditor();
-      console.log('inserted');
-    });
-
-    DiscourseURL.appEvents.on('composer:typed-reply', this, function(){
-      // showEditor();
-      console.log('typed-reply');
-    });
-
-    $('.markdown-container').hide();
-    $('.markdown-container').removeClass('invisible');
 
     // Back button
     $('a.editor-header-text').on('click', function() {
@@ -276,14 +263,10 @@
     });
 
     var validateForm = function() {
-      // var errors = [];
-      // $('.popup-tip.bad').each(function() { errors.push($(this).text()); });
-
       var title = MediumEditor.getEditorFromElement($('h1.editable')[0]).getContent();
       var body = cleanedMarkdown;
       if (title.length > Discourse.SiteSettings.min_topic_title_length &&
           body.length > Discourse.SiteSettings.min_post_length) {
-
         $submitButton
         .removeAttr('disabled')
         .removeAttr('title');
@@ -293,20 +276,8 @@
       }
     };
 
-    $markdownSwitch.on('switchChange.bootstrapSwitch', function(event, state) {
-      if (state) {
-        hideEditor(true);
-        // $('.editor-body-textarea').hide();
-        // $('.markdown-container').show();
-      } else {
-        // $('.editor-body-textarea').show();
-        // $('.markdown-container').hide();
-      }
-    });
-
-    if ($('#reply-control').hasClass('open')) {
+    if ($('#reply-control').hasClass('open'))
       showEditor();
-    }
 
   });
 }).call(this);

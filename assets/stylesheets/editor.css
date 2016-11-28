@@ -927,3 +927,21 @@
       right: 2px; }
   .bootstrap-switch.bootstrap-switch-inverse.bootstrap-switch-off .bootstrap-switch-handle-off {
     left: 2px; }
+
+.medium-editor-mention-panel {
+    position: absolute;
+    top: 0;
+    visibility: hidden;
+    overflow: hidden;
+    z-index: 10010;
+
+    .dropdown-menu {
+      top: 0 !important;
+      display: initial;
+    }
+}
+
+.medium-editor-mention-panel-active {
+    visibility: visible;
+    overflow: visible;
+}

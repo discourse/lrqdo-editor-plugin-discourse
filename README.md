@@ -39,5 +39,6 @@ hooks:
 and rebuild docker via
 
 ```
+./launcher cleanup
 ./launcher rebuild app
 ```
