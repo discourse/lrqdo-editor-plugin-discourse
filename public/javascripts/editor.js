@@ -1,140 +1,312 @@
 ﻿(function() {
   $(function() {
 
-    DiscourseURL.appEvents.on('composer:will-open', this, function(){
-      setTimeout(function() {
-        $('#main-outlet').hide();
-      }, 600);
-      $('#editor').addClass('visible');
-    });
+    var TCMention = require("medium-editor-autocomplete").TCMention;
 
-    DiscourseURL.appEvents.on('composer:will-close', this, function(){
-      $('#editor').removeClass('visible');
-      $('#main-outlet').show();
-    });
+    var cleanedMarkdown, editorBody, editorTitle, markDownEl;
+    var $defaultEditor = $('#reply-control');
+    var $markdownSwitch = $('#editor input[name=markdown]');
+    var $submitButton = $('#editor .btn-primary');
 
-    var $markdownSwitch, editorBody, editorTitle, markDownEl;
-    $('.markdown-container').hide();
-    $('.markdown-container').removeClass('invisible');
-
-    $('a.editor-header-text').on('click', function() {
-      $('#editor').removeClass('visible');
-      $('#main-outlet').show();
-      // DiscourseURL.appEvents.trigger("composer:will-close");
-      // DiscourseURL.appEvents.trigger("composer:closed");
-    });
-
-    var validateForm = function() {
-      var errors = [];
-      $('.popup-tip.bad').each(function() { errors.push($(this).text()); });
-      var $submitButton = $('#editor .btn-primary');
-      if(errors.length === 0) {
-        $submitButton
-        .removeAttr('disabled')
-        .removeAttr('title');
-      } else {
-        $submitButton
-        .attr('disabled', '')
-        .attr('title', errors.join(', '));
-      }
-      console.log(errors);
-    };
-
-    $('header .btn-primary, aside .btn-primary').on('click', function() {
-      setTimeout(function() {
-        return $('main').hide();
-      }, 600);
-      return $('#editor').addClass('visible');
-    });
-    $('a.editor-header-text').on('click', function() {
-      $('#editor').removeClass('visible');
-      return $('main').show();
-    });
-    $markdownSwitch = $('#editor input[name=markdown]');
     $markdownSwitch.bootstrapSwitch({
       inverse: true,
       offText: '&nbsp;',
       onText: '&nbsp;'
     });
+
+    var resetEditor = function() {
+      cleanedMarkdown = undefined;
+
+      if (editorTitle) {
+        editorTitle.destroy();
+      }
+
+      if (editorBody) {
+        editorBody.resetContent();
+        editorBody.destroy();
+      }
+
+      editorTitle = new MediumEditor('h1.editable', {
+        toolbar: false,
+        disableReturn: true,
+        disableDoubleReturn: true,
+        keyboardCommands: false,
+        placeholder: {
+          text: 'Donner un titre'
+        }
+      });
+
+      if ($('#reply-title').length > 0) {
+        messagePlaceholder = 'et commencer votre message ici (taper " : " pour les émojis :D)';
+        $('h1.editable').show();
+      } else {
+        messagePlaceholder = 'Taper votre message ici';
+        $('h1.editable').hide();
+      }
+
+      editorTitle.subscribe('editableInput', function (event, editable) {
+        var title = $(editable).text();
+        if (title.length > Discourse.SiteSettings.max_topic_title_length) {
+          editorTitle.setContent(title.substring(0, Discourse.SiteSettings.max_topic_title_length));
+        } else {
+          $("#reply-title").val(title);
+          validateForm();
+        }
+      });
+
+      markDownEl = $(".markdown-container");
+      editorBody = new MediumEditor('textarea.editable', {
+        extensions: {
+          markdown: new MeMarkdown(function(markdown) {
+            cleanedMarkdown = markdown
+            .split('<div class="medium-insert-buttons"')[0]
+            .replace(/<figure contenteditable="false">/g, '')
+            .replace(/<\/figure>/g, '');
+            markDownEl.text(cleanedMarkdown);
+            validateForm();
+          }),
+          mention: new TCMention({
+            renderPanelContent: function (panelEl, currentMentionText, selectMentionCallback) {
+              $.ajax({url: 'http://localhost:4000/users/search/users.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
+              .done(function(response) {
+                if (response.users.slice(0, 5).length > 0) {
+                  $(panelEl).html('<div class="dropdown-menu"></div>');
+                  response.users.forEach(function(user) {
+                    $(panelEl).find('> div').append("<a href='' class='dropdown-item' data-medium-value=" + user.username + "><div class='dropdown-item-content'>" + user.username + " <small>" + user.name + "</small></div></a>");
+                  });
+                  $(panelEl).find('> div a').on('click', function(event) {
+                    event.preventDefault();
+                    selectMentionCallback('@' + $(this).attr('data-medium-value'));
+                  });
+                } else {
+                  $(panelEl).html('');
+                }
+              });
+            },
+            activeTriggerList: ["@"]
+          }),
+          emoji: new TCMention({
+            renderPanelContent: function (panelEl, currentMentionText, selectMentionCallback) {
+              $.ajax({url: 'http://localhost:4000/emojis/search.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
+              .done(function(response) {
+                if (response.emojis.length > 0) {
+                  $(panelEl).html('<div class="dropdown-menu"></div>');
+                  response.emojis.forEach(function(emoji) {
+                    $(panelEl).find('> div').append("<a href='' class='dropdown-item' data-medium-value=" + emoji.url + "><div class='dropdown-item-content'><img src='" + emoji.url + "' width='30' height='30' /> " + emoji.name + "</div></a>");
+                  });
+                  $(panelEl).find('> div a').on('click', function(event) {
+                    event.preventDefault();
+                    selectMentionCallback('<img src=' + $(this).attr('data-medium-value') + ' width="30" height="30" />');
+                  });
+                } else {
+                  $(panelEl).html('');
+                }
+              });
+            },
+            activeTriggerList: [":"],
+            tagName: 'span',
+            htmlNode: true
+          })
+        },
+        toolbar: {
+          buttons: [
+            {
+            name: 'bold',
+            action: 'bold',
+            aria: 'bold',
+            tagNames: ['b', 'strong'],
+            contentDefault: '<b>G</b>'
+          }, 'italic', {
+            name: 'strikethrough',
+            action: 'strikethrough',
+            aria: 'strike through',
+            tagNames: ['s', 'strike'],
+            contentDefault: '<i class="fa fa-strikethrough"></i>'
+          }, 'h2', 'h3', {
+            name: 'unorderedlist',
+            action: 'insertunorderedlist',
+            aria: 'unordered list',
+            tagNames: ['ul'],
+            contentDefault: '<i class="fa fa-list-ul"></i>'
+          }, {
+            name: 'orderedlist',
+            action: 'insertorderedlist',
+            aria: 'ordered list',
+            tagNames: ['ol'],
+            contentDefault: '<i class="fa fa-list-ol"></i>'
+          }, 'quote', {
+            name: 'anchor',
+            action: 'createlink',
+            aria: 'link',
+            tagNames: ['a'],
+            contentDefault: '<i class="fa fa-link"></i>'
+          }
+          ]
+        },
+        placeholder: {
+          text: messagePlaceholder
+        }
+      });
+      $('textarea.editable').mediumInsert({
+        editor: editorBody,
+        addons: {
+          images: {
+            deleteScript: null,
+            fileUploadOptions: {
+              url: '/uploads-editor.json'
+            },
+            acceptFileTypes: /(.|\/)(gif|jpe?g|png)$/i,
+            captions: false
+          }
+        }
+      });
+
+      editorBody.subscribe('editableInput', function (event, editable) {
+        var body = $(editable).text();
+        // -5000 just to be sure with the editors conversion
+        var maxPostLength = Discourse.SiteSettings.max_post_length - 5000;
+        if (body.length > maxPostLength) {
+          editorBody.setContent(body.substring(0, maxPostLength));
+        }
+      });
+    }
+
+    var showEditor = function() {
+      if(!$('#editor').hasClass('visible')) {
+        $markdownSwitch.bootstrapSwitch('state', false);
+        setTimeout(function() {
+          if($('#editor').hasClass('visible')) {
+            $('#main-outlet').hide();
+          }
+        }, 600);
+
+        var titleHtml = $('.reply-to').html();
+        titleHtml = titleHtml.split('<div class="edit-reason-input')[0];
+        titleHtml = titleHtml.split('<a class="display-edit-reason')[0];
+        var $title = $("<span>" + $('<div/>').html(titleHtml).contents().text() + "</span>");
+        $title.prepend($('.reply-to i:first-child'));
+        $('#editor .editor-header h2').html($title);
+
+        resetEditor();
+        $('#editor').addClass('visible');
+      }
+    };
+
+    var hideEditor = function(keepDefaultEditor) {
+      if (keepDefaultEditor == null)
+        keepDefaultEditor = false;
+
+      if (cleanedMarkdown) {
+        $('.d-editor-input').val("");
+        DiscourseURL.appEvents.trigger('composer:insert-text', cleanedMarkdown);
+      }
+
+      $('#reply-title').trigger('focus');
+      $('#editor').removeClass('visible');
+      $('#main-outlet').show();
+      if (keepDefaultEditor) {
+        $defaultEditor.removeClass('invisible');
+      } else {
+        $defaultEditor.addClass('invisible');
+      }
+    };
+
+    DiscourseURL.appEvents.on('composer:opened', this, function(){
+      console.log('opened');
+
+      showEditor();
+
+      var defaultEditorTitle = $('#reply-title').val();
+      editorTitle.setContent(defaultEditorTitle);
+
+      var $clonedDefaultEditorCategorySelect = $('#reply-control select.category-combobox')
+      .clone()
+      .attr('class', 'form-control')
+      .attr('id', '');
+      $('#editor select').replaceWith($clonedDefaultEditorCategorySelect);
+      $('#editor select').show()
+      .on('change', function() {
+        var $defaultEditorCategorySelect = $('#reply-control select.category-combobox')
+        $defaultEditorCategorySelect.val($(this).val());
+        $defaultEditorCategorySelect.trigger('change');
+      });
+
+      $('.editor-body-textarea .fa-spin').remove();
+      // $('.editor-body-textarea').append('<i class="fa fa-circle-o-notch fa-spin fa-fw"></i>');
+
+      setTimeout(function() {
+        $('.editor-body-textarea .fa-spin').remove();
+
+        var defaultEditorBodyMarkdown = $('.d-editor-input').val();
+        if (defaultEditorBodyMarkdown && defaultEditorBodyMarkdown != '') {
+          var defaultEditorBody = $('.d-editor-preview').html();
+          editorBody.setContent(defaultEditorBody);
+        }
+      }, 5000);
+    });
+
+    DiscourseURL.appEvents.on('composer:will-open', this, function(){
+      showEditor();
+      console.log('will-open');
+    });
+
+    DiscourseURL.appEvents.on('composer:insert-text', this, function(){
+      // showEditor();
+      console.log('inserted');
+    });
+
+    DiscourseURL.appEvents.on('composer:typed-reply', this, function(){
+      // showEditor();
+      console.log('typed-reply');
+    });
+
+    $('.markdown-container').hide();
+    $('.markdown-container').removeClass('invisible');
+
+    // Back button
+    $('a.editor-header-text').on('click', function() {
+      hideEditor();
+    });
+
+    $submitButton.on('click', function() {
+      hideEditor(true);
+      setTimeout(function() {
+        $('#reply-control .btn.create ').trigger('click');
+      });
+    });
+
+    var validateForm = function() {
+      // var errors = [];
+      // $('.popup-tip.bad').each(function() { errors.push($(this).text()); });
+
+      var title = MediumEditor.getEditorFromElement($('h1.editable')[0]).getContent();
+      var body = cleanedMarkdown;
+      if (title.length > Discourse.SiteSettings.min_topic_title_length &&
+          body.length > Discourse.SiteSettings.min_post_length) {
+
+        $submitButton
+        .removeAttr('disabled')
+        .removeAttr('title');
+      } else {
+        $submitButton
+        .attr('disabled', '');
+      }
+    };
+
     $markdownSwitch.on('switchChange.bootstrapSwitch', function(event, state) {
       if (state) {
-        $('.editor-body-textarea').hide();
-        return $('.markdown-container').show();
+        hideEditor(true);
+        // $('.editor-body-textarea').hide();
+        // $('.markdown-container').show();
       } else {
-        $('.editor-body-textarea').show();
-        return $('.markdown-container').hide();
-      }
-    });
-    editorTitle = new MediumEditor('h1.editable', {
-      toolbar: false,
-      disableReturn: true,
-      disableDoubleReturn: true,
-      placeholder: {
-        text: 'Donner un titre'
+        // $('.editor-body-textarea').show();
+        // $('.markdown-container').hide();
       }
     });
 
-    editorTitle.subscribe('editableInput', function (event, editable) {
-      var title = $(editable).text();
-      $("#reply-title").val(title);
-      validateForm();
-    });
-
-    markDownEl = $(".markdown-container");
-    editorBody = new MediumEditor('textarea.editable', {
-      extensions: {
-        markdown: new MeMarkdown(function(markdown) {
-          var cleanedMarkdown;
-          cleanedMarkdown = markdown.split('<div class="medium-insert-buttons"')[0];
-          markDownEl.text(cleanedMarkdown);
-          $('.d-editor-input').val("")
-          DiscourseURL.appEvents.trigger('composer:insert-text', cleanedMarkdown);
-          $('textarea.d-editor-input').val(cleanedMarkdown);
-          validateForm();
-        })
-      },
-      toolbar: {
-        buttons: [
-          {
-          name: 'bold',
-          action: 'bold',
-          aria: 'bold',
-          tagNames: ['b', 'strong'],
-          contentDefault: '<b>G</b>'
-        }, 'italic', {
-          name: 'strikethrough',
-          action: 'strikethrough',
-          aria: 'strike through',
-          tagNames: ['s', 'strike'],
-          contentDefault: '<i class="fa fa-strikethrough"></i>'
-        }, 'h2', 'h3', {
-          name: 'unorderedlist',
-          action: 'insertunorderedlist',
-          aria: 'unordered list',
-          tagNames: ['ul'],
-          contentDefault: '<i class="fa fa-list-ul"></i>'
-        }, {
-          name: 'orderedlist',
-          action: 'insertorderedlist',
-          aria: 'ordered list',
-          tagNames: ['ol'],
-          contentDefault: '<i class="fa fa-list-ol"></i>'
-        }, 'quote', {
-          name: 'anchor',
-          action: 'createlink',
-          aria: 'link',
-          tagNames: ['a'],
-          contentDefault: '<i class="fa fa-link"></i>'
-        }
-        ]
-      },
-      placeholder: {
-        text: 'et commencer votre message ici (taper " : " pour les émojis :D)'
-      }
-    });
-    return $('textarea.editable').mediumInsert({
-      editor: editorBody
-    });
+    if ($('#reply-control').hasClass('open')) {
+      showEditor();
+    }
 
   });
 }).call(this);
