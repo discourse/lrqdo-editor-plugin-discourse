@@ -101,16 +101,10 @@ define("medium-editor-autocomplete", ["exports"], function (exports) {
       return subscribeCallbackName("editableKeyup", "handleKeyup");
     },
     detachEventHandlers: function detachEventHandlers() {
-      var boundCallback;
       if (this.hideOnBlurDelayId) {
         clearTimeout(this.hideOnBlurDelayId);
       }
       if (this.unsubscribeCallbacks) {
-        this.unsubscribeCallbacks.forEach(boundCallback = (function (_this) {
-          return function () {
-            return boundCallback();
-          };
-        })(this));
         return this.unsubscribeCallbacks = null;
       }
     },
@@ -168,7 +162,7 @@ define("medium-editor-autocomplete", ["exports"], function (exports) {
           textNode = siblingNode;
         }
         lastEmptyWord = last(firstChild.textContent);
-        hasLastEmptyWord = lastEmptyWord.trim().length === 0;
+        hasLastEmptyWord = lastEmptyWord && lastEmptyWord.trim().length === 0;
         if (hasLastEmptyWord) {
           textContent = firstChild.textContent;
           firstChild.textContent = textContent.substr(0, textContent.length - 1);

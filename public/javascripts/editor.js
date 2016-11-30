@@ -3,15 +3,58 @@
 
     var cleanedMarkdown, editorBody, editorTitle;
     var $defaultEditor = $('#reply-control');
-    var $markdownSwitch = $('#editor input[name=markdown]');
-    var $submitButton = $('#editor .btn-primary');
+    var $advancedSwitch = $('#editor input[name=advanced]');
+    var isTitleEditable = false;
     var TCMention = require("medium-editor-autocomplete").TCMention;
     var appEvents = Discourse.__container__.lookup('app-events:main');
 
-    var resetEditor = function() {
+    $defaultEditor.addClass('invisible');
+
+    var destroyEditor = function() {
       cleanedMarkdown = undefined;
 
-      $markdownSwitch.bootstrapSwitch({
+      $('#editor .editor-header h2').html('');
+      $('#editor select').addClass('invisible').hide();
+
+      if (editorTitle) {
+        editorTitle.unsubscribe('editableInput');
+        editorTitle.resetContent();
+        editorTitle.setContent('');
+        editorTitle.destroy();
+        $('h1.editable').replaceWith($("<h1 class='editable invisible'></h1>"));
+      }
+      $('a.editor-header-text').off('click');
+      $('#editor .btn-primary').off('click');
+
+      if (editorBody) {
+        editorBody.unsubscribe('editableInput');
+        editorBody.resetContent();
+        editorBody.setContent('');
+        editorBody.destroy();
+        $('textarea.editable').replaceWith("<textarea class='editable invisible'></textarea>");
+        $('.medium-editor-element').remove()
+      }
+      $advancedSwitch.bootstrapSwitch('destroy');
+    }
+
+    var resetEditor = function() {
+
+      // Back button
+      $('a.editor-header-text').on('click', function(event) {
+        event.preventDefault();
+        hideEditor();
+      });
+
+      $('#editor .btn-primary').on('click', function() {
+        hideEditor(true);
+        setTimeout(function() {
+          $('#reply-title').trigger('change');
+          $('#reply-control .btn.create ').trigger('click');
+        });
+      });
+
+      $advancedSwitch = $('#editor input[name=advanced]')
+      $advancedSwitch.bootstrapSwitch({
         inverse: true,
         offText: '&nbsp;',
         onText: '&nbsp;'
@@ -19,17 +62,18 @@
         if (state)
           hideEditor(true);
       }).bootstrapSwitch('state', false);
+    }
 
-      if (editorTitle) {
-        editorTitle.destroy();
+    var initFields = function() {
+
+      isTitleEditable = ($('#reply-title').length > 0);
+      if (isTitleEditable) {
+        messagePlaceholder = 'et commencer votre message ici (taper " : " pour les émojis :D)';
+        $('h1.editable').removeClass('invisible');
+      } else {
+        messagePlaceholder = 'Taper votre message ici';
+        $('h1.editable').addClass('invisible');
       }
-
-      if (editorBody) {
-        editorBody.resetContent();
-        editorBody.destroy();
-      }
-
-      $('#editor select').off('change');
 
       editorTitle = new MediumEditor('h1.editable', {
         toolbar: false,
@@ -41,19 +85,11 @@
         }
       });
 
-      if ($('#reply-title').length > 0) {
-        messagePlaceholder = 'et commencer votre message ici (taper " : " pour les émojis :D)';
-        $('h1.editable').show();
-      } else {
-        messagePlaceholder = 'Taper votre message ici';
-        $('h1.editable').hide();
-      }
-
       editorTitle.subscribe('editableInput', function (event, editable) {
-        var title = $(editable).text();
-        if (title.length > Discourse.SiteSettings.max_topic_title_length) {
-          editorTitle.setContent(title.substring(0, Discourse.SiteSettings.max_topic_title_length));
-        } else {
+        if ($('#editor').hasClass('visible')) {
+          var title = $(editable).text();
+          if (title.length > Discourse.SiteSettings.max_topic_title_length)
+            editorTitle.setContent(title.substring(0, Discourse.SiteSettings.max_topic_title_length));
           $("#reply-title").val(title);
           validateForm();
         }
@@ -61,16 +97,9 @@
 
       editorBody = new MediumEditor('textarea.editable', {
         extensions: {
-          markdown: new MeMarkdown(function(markdown) {
-            cleanedMarkdown = markdown
-            .split('<div class="medium-insert-buttons"')[0]
-            .replace(/<figure contenteditable="false">/g, '')
-            .replace(/<\/figure>/g, '');
-            validateForm();
-          }),
           mention: new TCMention({
             renderPanelContent: function (panelEl, currentMentionText, selectMentionCallback) {
-              $.ajax({url: '/users/search/users.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
+              $.ajax({url: 'http://localhost:4000/users/search/users.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
               .done(function(response) {
                 if (response.users.slice(0, 5).length > 0) {
                   $(panelEl).html('<div class="dropdown-menu"></div>');
@@ -80,6 +109,7 @@
                   $(panelEl).find('> div a').on('click', function(event) {
                     event.preventDefault();
                     selectMentionCallback('@' + $(this).attr('data-medium-value'));
+                    validateForm();
                   });
                 } else {
                   $(panelEl).html('');
@@ -90,16 +120,17 @@
           }),
           emoji: new TCMention({
             renderPanelContent: function (panelEl, currentMentionText, selectMentionCallback) {
-              $.ajax({url: '/emojis/search.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
+              $.ajax({url: 'http://localhost:4000/emojis/search.json?term=' + currentMentionText.substring(1) + '&topic_id=&include_groups=true'})
               .done(function(response) {
                 if (response.emojis.length > 0) {
                   $(panelEl).html('<div class="dropdown-menu"></div>');
                   response.emojis.forEach(function(emoji) {
-                    $(panelEl).find('> div').append("<a href='' class='dropdown-item' data-medium-value=" + emoji.url + "><div class='dropdown-item-content'><img src='" + emoji.url + "' width='30' height='30' /> " + emoji.name + "</div></a>");
+                    $(panelEl).find('> div').append("<a href='' class='dropdown-item' data-medium-value='" + emoji.name + "' data-medium-url='" + emoji.url + "'><div class='dropdown-item-content'><img class='emoji' src='" + emoji.url + "' width='20' height='20' /> " + emoji.name + "</div></a>");
                   });
                   $(panelEl).find('> div a').on('click', function(event) {
                     event.preventDefault();
-                    selectMentionCallback('<img src=' + $(this).attr('data-medium-value') + ' width="30" height="30" />');
+                    selectMentionCallback('<img src="' + $(this).attr('data-medium-url') + '" title="emoji" class="emoji" alt=":' + $(this).attr('data-medium-value') + ':">');
+                    validateForm();
                   });
                 } else {
                   $(panelEl).html('');
@@ -170,6 +201,7 @@
         var maxPostLength = Discourse.SiteSettings.max_post_length - 5000;
         if (body.length > maxPostLength)
           editorBody.setContent(body.substring(0, maxPostLength));
+        validateForm();
       });
     }
 
@@ -182,8 +214,10 @@
         }, 600);
 
         var titleHtml = $('.reply-to').html();
-        titleHtml = titleHtml.split('<div class="edit-reason-input')[0];
-        titleHtml = titleHtml.split('<a class="display-edit-reason')[0];
+        titleHtml = titleHtml
+        .split('<div class="edit-reason-input')[0]
+        .split('<a class="display-edit-reason')[0]
+        .split('<i class="fa fa-mail-forward reply-to-glyph')[0];
         var $title = $("<span>" + $('<div/>').html(titleHtml).contents().text() + "</span>");
         $title.prepend($('.reply-to i:first-child'));
         $('#editor .editor-header h2').html($title);
@@ -194,7 +228,7 @@
     };
 
     var hideEditor = function(keepDefaultEditor) {
-      $markdownSwitch.off('switchChange.bootstrapSwitch');
+      $advancedSwitch.off('switchChange.bootstrapSwitch');
 
       if (keepDefaultEditor == null)
         keepDefaultEditor = false;
@@ -204,7 +238,6 @@
         appEvents.trigger('composer:insert-text', cleanedMarkdown);
       }
 
-      $('#reply-title').trigger('focus');
       $('#editor').removeClass('visible');
       $('#main-outlet').show();
       if (keepDefaultEditor) {
@@ -212,72 +245,112 @@
       } else {
         $defaultEditor.addClass('invisible');
       }
+
+      destroyEditor();
     };
 
+    var loadDefaultEditorBodyValue = function() {
+      if ($('.d-editor-input').parent('div').find('.spinner').length > 0) {
+        setTimeout(function() {
+          loadDefaultEditorBodyValue();
+        }, 200);
+      } else {
+        setTimeout(function() {
+          $('.editor-body-textarea .fa-spin').remove();
+          $('textarea.editable').parent('div').find('.editable').removeClass('invisible');
+          var defaultEditorBodyMarkdown = $('.d-editor-input').val();
+          if (defaultEditorBodyMarkdown && defaultEditorBodyMarkdown != '') {
+            var defaultEditorBody = $('.d-editor-preview').html();
+            editorBodyId = $("textarea.editable").attr('medium-editor-textarea-id');
+            if ($('#' + editorBodyId).length > 0) {
+              editorBody = MediumEditor.getEditorFromElement($('#' + editorBodyId)[0])
+              editorBody.setContent(defaultEditorBody  + '<br>');
+            }
+          }
+        }, 100);
+      }
+    }
+
     appEvents.on('composer:opened', this, function(){
+
       showEditor();
+      initFields();
 
       var defaultEditorTitle = $('#reply-title').val();
-      editorTitle.setContent(defaultEditorTitle);
+      if (defaultEditorTitle)
+        editorTitle.setContent(defaultEditorTitle);
 
-      var $clonedDefaultEditorCategorySelect = $('#reply-control select.category-combobox')
-      .clone()
-      .attr('class', 'form-control')
-      .attr('id', '');
-      $('#editor select').replaceWith($clonedDefaultEditorCategorySelect);
-      $('#editor select').show()
-      .on('change', function() {
-        var $defaultEditorCategorySelect = $('#reply-control select.category-combobox')
-        $defaultEditorCategorySelect.val($(this).val());
-        $defaultEditorCategorySelect.trigger('change');
-      });
+      var $defaultEditorCategorySelect = $('#reply-control select.category-combobox');
+      if ($defaultEditorCategorySelect.length > 0) {
+        var $clonedDefaultEditorCategorySelect = $defaultEditorCategorySelect
+        .clone()
+        .attr('class', 'form-control')
+        .attr('id', '');
+        $('#editor select').replaceWith($clonedDefaultEditorCategorySelect);
+        $('#editor select').removeClass('invisible').show().on('change', function() {
+          var $defaultEditorCategorySelect = $('#reply-control select.category-combobox')
+          $defaultEditorCategorySelect.val($(this).val());
+          $defaultEditorCategorySelect.trigger('change');
+        });
+      }
 
       $('.editor-body-textarea .fa-spin').remove();
-      // $('.editor-body-textarea').append('<i class="fa fa-circle-o-notch fa-spin fa-fw"></i>');
+      $('.editor-body-textarea').append('<i class="fa fa-circle-o-notch fa-spin fa-fw"></i>');
 
-      setTimeout(function() {
-        $('.editor-body-textarea .fa-spin').remove();
-
-        var defaultEditorBodyMarkdown = $('.d-editor-input').val();
-        if (defaultEditorBodyMarkdown && defaultEditorBodyMarkdown != '') {
-          var defaultEditorBody = $('.d-editor-preview').html();
-          editorBody.setContent(defaultEditorBody);
-        }
-      }, 5000);
+      loadDefaultEditorBodyValue();
     });
 
     appEvents.on('composer:will-open', this, function(){
-      showEditor();
+      $defaultEditor.addClass('invisible');
+      showEditor('');
     });
 
-    // Back button
-    $('a.editor-header-text').on('click', function() {
-      hideEditor();
+    appEvents.on('composer:insert-text', this, function(){
+      // showEditor();
     });
 
-    $submitButton.on('click', function() {
-      hideEditor(true);
-      setTimeout(function() {
-        $('#reply-control .btn.create ').trigger('click');
-      });
+    appEvents.on('composer:typed-reply', this, function(){
+      // showEditor();
     });
 
     var validateForm = function() {
-      var title = MediumEditor.getEditorFromElement($('h1.editable')[0]).getContent();
-      var body = cleanedMarkdown;
-      if (title.length > Discourse.SiteSettings.min_topic_title_length &&
-          body.length > Discourse.SiteSettings.min_post_length) {
-        $submitButton
+      // var errors = [];
+      // $('.popup-tip.bad').each(function() { errors.push($(this).text()); });
+
+      var mediumEditorTitle = MediumEditor.getEditorFromElement($('h1.editable')[0]);
+      var title = mediumEditorTitle ? mediumEditorTitle.getContent() : '';
+
+      var editorBodyId = $("textarea.editable").attr('medium-editor-textarea-id');
+      if ($('#' + editorBodyId).length > 0) {
+        var bodyAllContents = MediumEditor.getEditorFromElement($('#' + editorBodyId)[0]).serialize();
+        var bodyElContent = bodyAllContents[editorBodyId].value;
+        var markdown = toMarkdown(bodyElContent);
+        cleanedMarkdown = markdown
+        .replace(/<figure>/g, '')
+        .replace(/<figure contenteditable="false">/g, '')
+        .replace(/<\/figure>/g, '');
+      }
+
+      var body = cleanedMarkdown || '';
+
+      if ((!isTitleEditable || title.length > (Discourse.SiteSettings.min_topic_title_length + 1)) &&
+          body.length > (Discourse.SiteSettings.min_post_length + 1)) {
+
+        $('#editor .btn-primary')
         .removeAttr('disabled')
         .removeAttr('title');
       } else {
-        $submitButton
+
+        $('#editor .btn-primary')
         .attr('disabled', '');
       }
     };
 
-    if ($('#reply-control').hasClass('open'))
-      showEditor();
+    setTimeout(function() {
+      if ($('#reply-control').hasClass('open')) {
+        showEditor();
+      }
+    }, 100);
 
   });
 }).call(this);
