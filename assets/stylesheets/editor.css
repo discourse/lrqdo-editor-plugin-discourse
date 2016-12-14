@@ -945,3 +945,29 @@
     visibility: visible;
     overflow: visible;
 }
+
+#editor .form-control {
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  &.select2-container {
+    display: inline-block;
+    &.select2-container-active {
+      box-shadow: none;
+      border: 1px solid #5897fb !important;
+      border-radius: 0 !important;
+    }
+    a.select2-choice {
+      border: none !important;
+    }
+    .select2-chosen {
+      color: #b4b4b4;
+    }
+  }
+}
+
+.select2-results .select2-highlighted {
+  background: #f1f1f1;
+}
+
+.select2-drop {
+  z-index: 10001;
+}

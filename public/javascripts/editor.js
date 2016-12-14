@@ -283,15 +283,34 @@
       var $defaultEditorCategorySelect = $('#reply-control select.category-combobox');
       if ($defaultEditorCategorySelect.length > 0) {
         var $clonedDefaultEditorCategorySelect = $defaultEditorCategorySelect
-        .clone()
-        .attr('class', 'form-control')
-        .attr('id', '');
+          .clone()
+          .attr('class', 'form-control')
+          .attr('id', '');
         $('#editor select').replaceWith($clonedDefaultEditorCategorySelect);
         $('#editor select').removeClass('invisible').show().on('change', function() {
           var $defaultEditorCategorySelect = $('#reply-control select.category-combobox')
           $defaultEditorCategorySelect.val($(this).val());
           $defaultEditorCategorySelect.trigger('change');
         });
+        $.ajax({url: '/categories.json'})
+          .done(function(results) {
+            var categories = results.category_list.categories;
+            var formatResult = function (state) {
+              var html = `<h5 class='m-b-0>${state.text}</h5>`;
+              var categoryFinder = $.grep(categories, function(category){ return category.id == state.id; });
+              if (categoryFinder.length == 0) { return html };
+              var category = categoryFinder[0];
+              html = `<h5 class='m-b-0'>${state.text} <small>&times; ${category.topic_count}</small></h5>`;
+              if (category.description) {
+                html += `<div class="text-muted small">${category.description.substr(0, 200)}${category.description.length > 200 ? '&hellip;' : ''}</div>`;
+              }
+              return html;
+            }
+            $('#editor select').select2({
+              formatResult: formatResult,
+              width: '300px'
+            });
+          })
       }
 
       $('.editor-body-textarea .fa-spin').remove();
