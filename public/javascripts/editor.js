@@ -140,41 +140,45 @@
             activeTriggerList: [":"],
             tagName: 'span',
             htmlNode: true
+          }),
+          customHtml: new CustomHtml({
+            buttonText: "—",
+            htmlToInsert: "<hr>"
           })
         },
         toolbar: {
           buttons: [
             {
-            name: 'bold',
-            action: 'bold',
-            aria: 'bold',
-            tagNames: ['b', 'strong'],
-            contentDefault: '<b>G</b>'
-          }, 'italic', {
-            name: 'strikethrough',
-            action: 'strikethrough',
-            aria: 'strike through',
-            tagNames: ['s', 'strike'],
-            contentDefault: '<i class="fa fa-strikethrough"></i>'
-          }, 'h2', 'h3', {
-            name: 'unorderedlist',
-            action: 'insertunorderedlist',
-            aria: 'unordered list',
-            tagNames: ['ul'],
-            contentDefault: '<i class="fa fa-list-ul"></i>'
-          }, {
-            name: 'orderedlist',
-            action: 'insertorderedlist',
-            aria: 'ordered list',
-            tagNames: ['ol'],
-            contentDefault: '<i class="fa fa-list-ol"></i>'
-          }, 'quote', {
-            name: 'anchor',
-            action: 'createlink',
-            aria: 'link',
-            tagNames: ['a'],
-            contentDefault: '<i class="fa fa-link"></i>'
-          }
+              name: 'bold',
+              action: 'bold',
+              aria: 'bold',
+              tagNames: ['b', 'strong'],
+              contentDefault: '<b>G</b>'
+            }, 'italic', {
+              name: 'strikethrough',
+              action: 'strikethrough',
+              aria: 'strike through',
+              tagNames: ['s', 'strike'],
+              contentDefault: '<i class="fa fa-strikethrough"></i>'
+            }, 'h2', 'h3', {
+              name: 'unorderedlist',
+              action: 'insertunorderedlist',
+              aria: 'unordered list',
+              tagNames: ['ul'],
+              contentDefault: '<i class="fa fa-list-ul"></i>'
+            }, {
+              name: 'orderedlist',
+              action: 'insertorderedlist',
+              aria: 'ordered list',
+              tagNames: ['ol'],
+              contentDefault: '<i class="fa fa-list-ol"></i>'
+            }, 'quote', {
+              name: 'anchor',
+              action: 'createlink',
+              aria: 'link',
+              tagNames: ['a'],
+              contentDefault: '<i class="fa fa-link"></i>'
+            }, 'customHtml'
           ]
         },
         placeholder: {
