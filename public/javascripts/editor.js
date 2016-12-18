@@ -14,6 +14,8 @@
       cleanedMarkdown = undefined;
 
       $('#editor .editor-header h2').html('');
+      $('#editor select').select2('destroy');
+      $('#editor select2-container').remove();
       $('#editor select').addClass('invisible').hide();
 
       if (editorTitle) {
@@ -23,6 +25,7 @@
         editorTitle.destroy();
         $('h1.editable').replaceWith($("<h1 class='editable invisible'></h1>"));
       }
+
       $('a.editor-header-text').off('click');
       $('#editor .btn-primary').off('click');
 
@@ -34,6 +37,7 @@
         $('textarea.editable').replaceWith("<textarea class='editable invisible'></textarea>");
         $('.medium-editor-element').remove()
       }
+
       $advancedSwitch.bootstrapSwitch('destroy');
     }
 
@@ -247,6 +251,7 @@
       if (keepDefaultEditor) {
         $defaultEditor.removeClass('invisible');
       } else {
+        $defaultEditor.find('a.cancel').trigger('click');
         $defaultEditor.addClass('invisible');
       }
 
