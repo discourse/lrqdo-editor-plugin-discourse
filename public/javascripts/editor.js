@@ -133,7 +133,7 @@
                   });
                   $(panelEl).find('> div a').on('click', function(event) {
                     event.preventDefault();
-                    selectMentionCallback('<img src="' + $(this).attr('data-medium-url') + '" title="emoji" class="emoji" alt=":' + $(this).attr('data-medium-value') + ':">');
+                    selectMentionCallback('<img src="' + $(this).attr('data-medium-url') + '" title=":' + $(this).attr('data-medium-value') + ':" class="emoji" alt=":' + $(this).attr('data-medium-value') + ':">');
                     validateForm();
                   });
                 } else {
@@ -352,7 +352,15 @@
       if ($('#' + editorBodyId).length > 0) {
         var bodyAllContents = MediumEditor.getEditorFromElement($('#' + editorBodyId)[0]).serialize();
         var bodyElContent = bodyAllContents[editorBodyId].value;
-        var markdown = toMarkdown(bodyElContent);
+        var emojiConverter  = {
+          filter: function (node) {
+            return node.nodeName === 'IMG' && node.className === 'emoji';
+          },
+          replacement: function(content, node) {
+            return node.getAttribute('title');
+          }
+        }
+        var markdown = toMarkdown(bodyElContent, { converters: [emojiConverter]});
         cleanedMarkdown = markdown
         .replace(/<figure>/g, '')
         .replace(/<figure contenteditable="false">/g, '')
