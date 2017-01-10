@@ -1,6 +1,6 @@
 # name: lrqdo-editor
 # about: La ruche qui dit oui - editor
-# version: 0.0.2
+# version: 1.0.0
 # authors: Sébastien Bourdu
 # url: https://github.com/ekkans/lrqdo-editor-plugin-discourse
 
