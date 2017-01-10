@@ -1,6 +1,8 @@
 La Ruche qui dit oui - Plugin Discourse - Editor
 ================================================
 
+![](https://raw.githubusercontent.com/ekkans/lrqdo-editor-plugin-discourse/master/preview.png)
+
 ## Local development using vagrant
 
 ```
