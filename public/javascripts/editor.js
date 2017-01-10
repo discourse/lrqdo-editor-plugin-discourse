@@ -185,6 +185,10 @@
             }, 'customHtml'
           ]
         },
+        anchor: {
+            linkValidation: true,
+            placeholderText: 'Insérer le lien'
+        },
         placeholder: {
           text: messagePlaceholder
         }
