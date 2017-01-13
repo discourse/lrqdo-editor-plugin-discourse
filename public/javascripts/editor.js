@@ -112,7 +112,7 @@
                   });
                   $(panelEl).find('> div a').on('click', function(event) {
                     event.preventDefault();
-                    selectMentionCallback('@' + $(this).attr('data-medium-value'));
+                    selectMentionCallback('<a class="mention" href="/users/' + $(this).attr('data-medium-value') + '">@' + $(this).attr('data-medium-value') + '</a>');
                     validateForm();
                   });
                 } else {
@@ -120,7 +120,9 @@
                 }
               });
             },
-            activeTriggerList: ["@"]
+            activeTriggerList: ["@"],
+            tagName: 'span',
+            htmlNode: true
           }),
           emoji: new TCMention({
             renderPanelContent: function (panelEl, currentMentionText, selectMentionCallback) {
@@ -240,6 +242,8 @@
     };
 
     var hideEditor = function(keepDefaultEditor) {
+      validateForm();
+      
       $advancedSwitch.off('switchChange.bootstrapSwitch');
 
       if (keepDefaultEditor == null)
@@ -364,7 +368,27 @@
             return node.getAttribute('title');
           }
         }
-        var markdown = toMarkdown(bodyElContent, { converters: [emojiConverter]});
+        var mentionConverter  = {
+          filter: function (node) {
+            var targetNode;
+            if (node.nodeName === 'SPAN') {
+              targetNode = node.children[0] ? node.children[0] : node;
+            } else {
+              targetNode = node;
+            }
+            return targetNode.className.trim() === 'mention';
+          },
+          replacement: function(content, node) {
+            var targetNode;
+            if (node.nodeName === 'SPAN') {
+              targetNode = node.children[0] ? node.children[0] : node;
+            } else {
+              targetNode = node;
+            }
+            return targetNode.textContent;
+          }
+        }
+        var markdown = toMarkdown(bodyElContent, { converters: [emojiConverter, mentionConverter]});
         cleanedMarkdown = markdown
         .replace(/<figure>/g, '')
         .replace(/<figure contenteditable="false">/g, '')
