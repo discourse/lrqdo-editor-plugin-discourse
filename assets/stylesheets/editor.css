@@ -626,7 +626,8 @@
   display: none; }
 
 .medium-editor-insert-plugin.medium-editor-placeholder:after {
-  padding: 1em 0; }
+  padding: 1em 0;
+  white-space: inherit; }
 
 .medium-editor-insert-plugin .medium-insert-buttons {
   position: absolute;
@@ -800,7 +801,10 @@
       font-weight: bold;
       color: #056E7D; }
       #editor .editor-body h1:after, #editor .editor-body .h1:after {
-        margin-top: 0; }
+        margin-top: 0;  }
+      @media (max-width: 575px) {
+        #editor .editor-body h1:after, #editor .editor-body .h1:after {
+          margin-top: 0; font-size: 38px; } }
     #editor .editor-body h2, #editor .editor-body h3 {
       margin-top: 2rem; }
   #editor .editor-footer {
@@ -970,4 +974,15 @@
 
 .select2-drop {
   z-index: 10001;
+}
+
+#editor .editor-footer .col-md-5 > * {
+  margin-top: 12px;
+}
+
+@media (max-width: 575px) {
+  #editor .editor-footer .col-md-3 > .form-check {
+    margin-top: 12px;
+    float: left;
+  }
 }

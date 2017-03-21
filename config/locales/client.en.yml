@@ -1,9 +1,10 @@
 en:
-  lrqdo_editor:
-    back: "Retour"
-    poster: "Poster"
-    select_a_category: "Sélectionner une rubrique"
-    advanced_mode: "Mode avancé"
-    title_placeholder: "Donner un titre"
-    message_placeholder: "et commencer votre message ici (taper \" : \" pour les émojis :D)"
-    message_placeholder_without_title: "Taper votre message ici"
+  js:
+    lrqdo_editor:
+      back: "Retour"
+      poster: "Poster"
+      select_a_category: "Sélectionner une rubrique"
+      advanced_mode: "Mode avancé"
+      title_placeholder: "Donner un titre"
+      message_placeholder: "et commencer votre message ici (taper \" : \" pour les émojis :D)"
+      message_placeholder_without_title: "Taper votre message ici"
