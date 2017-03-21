@@ -72,10 +72,10 @@
 
       isTitleEditable = ($('#reply-title').length > 0);
       if (isTitleEditable) {
-        messagePlaceholder = 'et commencer votre message ici (taper " : " pour les émojis :D)';
+        messagePlaceholder = I18n.t('lrqdo_editor.message_placeholder');
         $('h1.editable').removeClass('invisible');
       } else {
-        messagePlaceholder = 'Taper votre message ici';
+        messagePlaceholder = I18n.t('lrqdo_editor.message_placeholder_without_title');
         $('h1.editable').addClass('invisible');
       }
 
@@ -85,7 +85,7 @@
         disableDoubleReturn: true,
         keyboardCommands: false,
         placeholder: {
-          text: 'Donner un titre'
+          text: I18n.t('lrqdo_editor.title_placeholder')
         }
       });
 
