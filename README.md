@@ -15,7 +15,7 @@ bundle exec sidekiq -l log/sidekiq.log -q critical -q default -q low
 ```
 
 Point your browser to:
-- http://127.0.0.1:40005 - Discourse instance
+- http://127.0.0.1:4000 - Discourse instance
 - http://127.0.0.1:4000/sidekiq2 - Sidekiq queues
 - http://127.0.0.1:40803 - mailcatcher
 
