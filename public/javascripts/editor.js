@@ -146,10 +146,6 @@
             activeTriggerList: [":"],
             tagName: 'span',
             htmlNode: true
-          }),
-          customHtml: new CustomHtml({
-            buttonText: "—",
-            htmlToInsert: "<hr>"
           })
         },
         toolbar: {
@@ -243,7 +239,7 @@
 
     var hideEditor = function(keepDefaultEditor) {
       validateForm();
-      
+
       $advancedSwitch.off('switchChange.bootstrapSwitch');
 
       if (keepDefaultEditor == null)
