@@ -110,6 +110,10 @@
                   response.users.forEach(function(user) {
                     $(panelEl).find('> div').append("<a href='' class='dropdown-item' data-medium-value=" + user.username + "><div class='dropdown-item-content'>" + user.username + " <small>" + user.name + "</small></div></a>");
                   });
+                  index = $('.medium-editor-insert-plugin').attr('data-selected-item');
+                  if (!index || index < 0 || index >= $(panelEl).find('.dropdown-item').length)
+                    index = 0
+                  $(panelEl).find('.dropdown-item').eq(index).addClass('selected');
                   $(panelEl).find('> div a').on('click', function(event) {
                     event.preventDefault();
                     selectMentionCallback('<a class="mention" href="/users/' + $(this).attr('data-medium-value') + '">@' + $(this).attr('data-medium-value') + '</a>');
@@ -133,6 +137,10 @@
                   response.emojis.forEach(function(emoji) {
                     $(panelEl).find('> div').append("<a href='' class='dropdown-item' data-medium-value='" + emoji.name + "' data-medium-url='" + emoji.url + "'><div class='dropdown-item-content'><img class='emoji' src='" + emoji.url + "' width='20' height='20' /> " + emoji.name + "</div></a>");
                   });
+                  index = $('.medium-editor-insert-plugin').attr('data-selected-item');
+                  if (!index || index < 0 || index >= $(panelEl).find('.dropdown-item').length)
+                    index = 0
+                  $(panelEl).find('.dropdown-item').eq(index).addClass('selected');
                   $(panelEl).find('> div a').on('click', function(event) {
                     event.preventDefault();
                     selectMentionCallback('<img src="' + $(this).attr('data-medium-url') + '" title=":' + $(this).attr('data-medium-value') + ':" class="emoji" alt=":' + $(this).attr('data-medium-value') + ':">');
@@ -411,6 +419,42 @@
         showEditor();
       }
     }, 100);
+
+    // Handle selection by via keyboard for mentions
+    $(document).keydown(function(e) {
+
+      if (e.keyCode == 13) { // enter
+        $('.medium-editor-mention-panel-active .dropdown-item.selected').trigger('click');
+        e.preventDefault();
+      } else if (e.keyCode != 40 && e.keyCode != 38) {
+        return;
+      }
+
+      if ($(':focus').hasClass('medium-editor-insert-plugin')) {
+        index = $('.medium-editor-insert-plugin').attr('data-selected-item');
+        var $listItems = $('.medium-editor-mention-panel-active .dropdown-item'),
+        $selected = $listItems.eq(index),
+        $current;
+
+        if (e.keyCode == 38) {  // up
+          e.preventDefault();
+          if (!$selected.length || $selected.is(':first-child')) {
+            $current = $listItems.last();
+          } else {
+            $current = $selected.prev();
+          }
+        } else if (e.keyCode == 40) {  // down
+          e.preventDefault();
+          if (!$selected.length || $selected.is(':last-child')) {
+            $current = $listItems.eq(0);
+          } else {
+            $current = $selected.next();
+          }
+        }
+
+        $('.medium-editor-insert-plugin').attr('data-selected-item', $listItems.index($current));
+      }
+    });
 
   });
 }).call(this);

@@ -986,3 +986,9 @@
     float: left;
   }
 }
+
+.dropdown-item.selected {
+  color: #262626;
+  text-decoration: none;
+  background-color: #f3f8f9;
+}
