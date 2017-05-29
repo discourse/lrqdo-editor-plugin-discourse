@@ -16,7 +16,7 @@ after_initialize do
       type = 'composer'
       file = params[:file] || params[:files].try(:first)
       url = nil
-      data = create_upload(type, file, url)
+      data = create_upload(file, url, type)
       render json: {
         files: [{ url: data.url }]
       }
