@@ -420,8 +420,12 @@
       }
     }, 100);
 
-    // Handle selection by via keyboard for mentions
+    // Handle selection via keyboard for mentions
     $(document).keydown(function(e) {
+      
+      if ($('.medium-editor-mention-panel-active').length < 1) {
+        return;
+      }
 
       if (e.keyCode == 13) { // enter
         $('.medium-editor-mention-panel-active .dropdown-item.selected').trigger('click');
