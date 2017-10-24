@@ -1,6 +1,6 @@
 # name: lrqdo-editor
 # about: La ruche qui dit oui - editor
-# version: 1.0.0
+# version: 1.0.1
 # authors: Sébastien Bourdu
 # url: https://github.com/ekkans/lrqdo-editor-plugin-discourse
 
@@ -16,7 +16,9 @@ after_initialize do
       type = 'composer'
       file = params[:file] || params[:files].try(:first)
       url = nil
-      data = create_upload(type, file, url)
+      for_private_message = true
+      pasted = false
+      data = create_upload(file, url, type, for_private_message, pasted)
       render json: {
         files: [{ url: data.url }]
       }

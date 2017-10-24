@@ -130,7 +130,7 @@ define("medium-editor-autocomplete", ["exports"], function (exports) {
       this.getWordFromSelection(event.target, isSpace != null ? isSpace : -{
         1: 0
       });
-      if (!isSpace && this.activeTriggerList.indexOf(this.trigger) !== -1 && this.word.length > 1) {
+      if (!isSpace && this.activeTriggerList.indexOf(this.trigger) !== -1 && this.word.length > 0) {
         return this.showPanel();
       } else {
         return this.hidePanel(keyCode === LEFT_ARROW_KEYCODE);

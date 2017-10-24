@@ -507,11 +507,11 @@
 .medium-editor-placeholder:after {
   color: #b3b3b1; }
 
-/*! 
+/*!
  * medium-editor-insert-plugin v2.4.0 - jQuery insert plugin for MediumEditor
  *
  * http://linkesch.com/medium-editor-insert-plugin
- * 
+ *
  * Copyright (c) 2014 Pavel Linkesch (http://linkesch.com)
  * Released under the MIT license
  */
@@ -758,7 +758,7 @@
 
 #editor {
   top: 100%;
-  transition: top 600ms;
+  transition: all 600ms;
   transition-timing-function: ease-out;
   position: fixed;
   z-index: 10000;
@@ -766,6 +766,10 @@
   width: 100%;
   height: 100%; }
   #editor.visible {
+    height: 50%;
+    top: 50%; }
+  #editor.fullscreen.visible {
+    height: 100%;
     top: 0; }
   #editor .editor-header {
     padding: 0.5rem 0;
