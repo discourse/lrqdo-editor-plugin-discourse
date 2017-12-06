@@ -1,6 +1,6 @@
 # name: lrqdo-editor
 # about: La ruche qui dit oui - editor
-# version: 1.0.2
+# version: 1.0.3
 # authors: Sébastien Bourdu
 # url: https://github.com/ekkans/lrqdo-editor-plugin-discourse
 
@@ -13,14 +13,26 @@ after_initialize do
   require_dependency 'uploads_controller'
   class ::UploadsController
     def editor
+      me = current_user
       type = 'composer'
       file = params[:file] || params[:files].try(:first)
       url = nil
       for_private_message = true
       pasted = false
-      data = create_upload(file, url, type, for_private_message, pasted)
+      is_api = true
+      retain_hours = 876000
+      info = ::UploadsController.create_upload(
+        current_user: me,
+        file: file,
+        url: url,
+        type: type,
+        for_private_message: for_private_message,
+        pasted: pasted,
+        is_api: is_api,
+        retain_hours: retain_hours
+      )
       render json: {
-        files: [{ url: data.url }]
+        files: [ ::UploadsController.serialize_upload(info) ]
       }
     end
   end
